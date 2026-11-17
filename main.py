@@ -3,6 +3,7 @@ from typing import Any, Callable
 
 from address_book import AddressBook
 from models import Record
+from serialization import load_data, save_data
 
 Args = list[str]
 
@@ -219,47 +220,55 @@ def show_help() -> str:
     return "\n".join(["Available commands:", *lines])
 
 
+def handle_command(command: str, args: Args, book: AddressBook) -> str:
+    """Run one command and return the reply for the user."""
+    if command == "hello":
+        return "How can I help you?"
+    if command == "add":
+        return add_record(args, book)
+    if command == "change":
+        return change_record(args, book)
+    if command == "phone":
+        return show_phone(args, book)
+    if command == "all":
+        return show_all(book)
+    if command == "add-birthday":
+        return add_birthday(args, book)
+    if command == "show-birthday":
+        return show_birthday(args, book)
+    if command == "birthdays":
+        return birthdays(args, book)
+    if command == "help":
+        return show_help()
+    return "Invalid command. Type 'help' to see the commands."
+
+
 def main() -> None:
     """Read commands from the user until "close", "exit", Ctrl+C or Ctrl+D."""
-    book = AddressBook()
+    book = load_data()
     print("Welcome to the assistant bot!")
 
-    while True:
-        try:
-            command, args = parse_input(input(PROMPT))
-        except (KeyboardInterrupt, EOFError):
-            # Ctrl+C / Ctrl+D leave the prompt line unfinished; move to a new one.
-            print()
-            print(GOODBYE_MESSAGE)
-            break
+    try:
+        while True:
+            try:
+                command, args = parse_input(input(PROMPT))
+            except (KeyboardInterrupt, EOFError):
+                # Ctrl+C / Ctrl+D leave the prompt line unfinished; move to a new one.
+                print()
+                break
 
-        if not command:
-            continue
+            if not command:
+                continue
 
-        if command in ("close", "exit"):
-            print(GOODBYE_MESSAGE)
-            break
+            if command in ("close", "exit"):
+                break
 
-        if command == "hello":
-            print("How can I help you?")
-        elif command == "add":
-            print(add_record(args, book))
-        elif command == "change":
-            print(change_record(args, book))
-        elif command == "phone":
-            print(show_phone(args, book))
-        elif command == "all":
-            print(show_all(book))
-        elif command == "add-birthday":
-            print(add_birthday(args, book))
-        elif command == "show-birthday":
-            print(show_birthday(args, book))
-        elif command == "birthdays":
-            print(birthdays(args, book))
-        elif command == "help":
-            print(show_help())
-        else:
-            print("Invalid command. Type 'help' to see the commands.")
+            print(handle_command(command, args, book))
+    finally:
+        # Runs on every way out, including an unexpected error.
+        save_data(book)
+
+    print(GOODBYE_MESSAGE)
 
 
 if __name__ == "__main__":
